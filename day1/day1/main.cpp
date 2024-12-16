@@ -54,4 +54,19 @@ int main()
     }
 
     std::cout << totalDiff << '\n';
+
+    int similarity{ 0 };
+
+    for (int i{ 0 }; i < count; i++)
+    {
+        for (int k{ 0 }; k < count; k++)
+        {
+            if (listA[i] == listB[k])
+            {
+                similarity += listA[i];
+            }
+        }
+    }
+
+    std::cout << similarity << '\n';
 }
