@@ -3,6 +3,10 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <functional>
+
 
 struct Rule
 {
@@ -42,6 +46,28 @@ static bool passesRules(std::vector<int>& pages, std::vector<Rule>& rules)
         }
     }
     return true;
+}
+
+static bool compareRules(std::vector<Rule>& rules, const int& pageA, const int& pageB)
+{
+    for (Rule& rule : rules)
+    {
+        if (rule.first == pageA && rule.second == pageB)
+        {
+            return true;
+        }
+        if (rule.first == pageB && rule.second == pageA)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void sortByRules(std::vector<int>& pages, std::vector<Rule>& rules) {
+    using namespace std::placeholders;
+    auto cmpRules = std::bind(compareRules, rules, _1, _2);
+    std::sort(std::begin(pages), std::end(pages), cmpRules);
 }
 
 int main()
@@ -84,7 +110,8 @@ int main()
     }
 
     int page{ };
-    int result{ 0 };
+    int resultA{ 0 };
+    int resultB{ 0 };
 
     while (std::getline(input, line))
     {
@@ -101,9 +128,15 @@ int main()
 
         if (passesRules(pages, rules))
         {
-            result += pages[pages.size() / 2];
+            resultA += pages[pages.size() / 2];
+        }
+        else
+        {
+            sortByRules(pages, rules);
+            resultB += pages[pages.size() / 2];
         }
     }
 
-    std::cout << result << '\n';
+    std::cout << resultA << '\n';
+    std::cout << resultB << '\n';
 }
