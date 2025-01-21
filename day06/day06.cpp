@@ -6,13 +6,14 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
+#include <bitset>
+
+enum Direction { up, right, down, left };
 
 struct Tile {
     bool blocker{};
-    bool visited{};
+    std::bitset<4> visitedDirections{};
 };
-
-enum Direction { up, right, down, left };
 
 struct Guard {
     int x{};
@@ -20,7 +21,7 @@ struct Guard {
     Direction direction{};
 };
 
-void drawTiles(std::vector<Tile>& tiles, Guard &guard, size_t &width, size_t &height)
+static void drawTiles(std::vector<Tile>& tiles, Guard &guard, size_t &width, size_t &height)
 {
     std::stringstream screen{};
     for (int y = 0; y < height; y++) {
@@ -35,7 +36,7 @@ void drawTiles(std::vector<Tile>& tiles, Guard &guard, size_t &width, size_t &he
                 if (tile.blocker) {
                     screen << "#";
                 }
-                else if (tile.visited)
+                else if (tile.visitedDirections.any())
                 {
                     screen << "X";
                 }
@@ -53,34 +54,16 @@ void drawTiles(std::vector<Tile>& tiles, Guard &guard, size_t &width, size_t &he
     std::cout << screen.str();
 }
 
-int main()
+struct PatrolResult {
+    int visitedTiles;
+    bool loops;
+};
+
+static PatrolResult patrolGuard(std::vector<Tile> &tiles, Guard &guard, size_t &width, size_t &height)
 {
-    std::ifstream input{ "input.txt" };
-    std::stringstream inputstream{};
-    inputstream << input.rdbuf();
-    std::string inputstring = inputstream.str();
+    int visitedTiles{ 0 };
+    bool loops{ false };
 
-    size_t width = inputstring.find("\n");
-    size_t height = inputstring.length() / (width + 1);
-
-    std::vector<Tile> tiles(width * height);
-
-    Guard guard;
-
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-            char value = inputstring[x + y * (width + 1)];
-            tiles[x + y * width].blocker = value == '#';
-            if (value == '^') {
-                guard.x = x;
-                guard.y = y;
-                guard.direction = up;
-            }
-        }
-    }
-
-    int totalVisited{0};
- 
     while (true)
     {
         int x = guard.x;
@@ -89,11 +72,18 @@ int main()
         //system("cls");
         //drawTiles(tiles, guard, width, height);
 
-        Tile &tile = tiles[x + y * width];
+        Tile& tile = tiles[x + y * width];
 
-        if ( ! tile.visited) {
-            totalVisited++;
-            tile.visited = true;
+        if (tile.visitedDirections.test(guard.direction))
+        {
+            loops = true;
+            break;
+        }
+
+        if ( ! tile.visitedDirections.any())
+        {
+            visitedTiles++;
+            tile.visitedDirections.set(guard.direction);
         }
 
         switch (guard.direction)
@@ -127,5 +117,60 @@ int main()
         }
     }
 
-    std::cout << totalVisited << "\n";
+    PatrolResult result{};
+    result.visitedTiles = visitedTiles;
+    result.loops = loops;
+    return result;
+}
+
+int main()
+{
+    std::ifstream input{ "input.txt" };
+    std::stringstream inputstream{};
+    inputstream << input.rdbuf();
+    std::string inputstring = inputstream.str();
+
+    size_t width = inputstring.find("\n");
+    size_t height = inputstring.length() / (width + 1);
+
+    std::vector<Tile> tiles(width * height);
+
+    Guard guard;
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            char value = inputstring[x + y * (width + 1)];
+            tiles[x + y * width].blocker = value == '#';
+            if (value == '^') {
+                guard.x = x;
+                guard.y = y;
+                guard.direction = up;
+            }
+        }
+    }
+
+    std::vector<Tile> patrolledTiles = tiles;
+    Guard patrolledGuard = guard;
+    PatrolResult patrolledResult = patrolGuard(patrolledTiles, patrolledGuard, width, height);
+
+    //drawTiles(patrolledTiles, patrolledGuard, width, height);
+
+    int loopingObstructions{0};
+
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            if (patrolledTiles[x + y * width].visitedDirections.any()) {
+                std::vector<Tile> obstructedTiles = tiles;
+                obstructedTiles[x + y * width].blocker = true;
+                Guard obstructedGuard = guard;
+                PatrolResult obstructedResult = patrolGuard(obstructedTiles, obstructedGuard, width, height);
+                if (obstructedResult.loops) {
+                    loopingObstructions++;
+                }
+            }
+        }
+    }
+
+    std::cout << patrolledResult.visitedTiles << "\n";
+    std::cout << loopingObstructions << "\n";
 }
