@@ -30,6 +30,10 @@ static uint64_t solve(
             candidateValue = operators[op](candidateValue, numbers[n]);
         }
 
+        if (candidateValue > value) {
+            return 0;
+        }
+
         if (candidateValue == value) {
             return value;
         }
