@@ -46,17 +46,20 @@ int main()
     int result{ 0 };
 
     auto recordAntinode = [&](Antenna& a, Antenna& b) {
-        int x = b.x + (b.x - a.x);
-        int y = b.y + (b.y - a.y);
-        if (x >= width || x < 0 || y >= height || y < 0)
+        int xo = b.x - a.x;
+        int yo = b.y - a.y;
+        int x = a.x;
+        int y = a.y;
+        while (x < width && x >= 0 && y < height && y >= 0)
         {
-            return;
-        }
-        size_t index = x + y * (width - 1);
-        if (!antinodeMap[index])
-        {
-            antinodeMap[index] = true;
-            result++;
+            size_t index = x + y * width;
+            if (!antinodeMap[index])
+            {
+                antinodeMap[index] = true;
+                result++;
+            }
+            x += xo;
+            y += yo;
         }
     };
 
